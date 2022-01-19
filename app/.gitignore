@@ -1,0 +1,7 @@
+/build
+gradlew
+gradlew.bat
+local.properties
+app.iml
+.idea/
+/release

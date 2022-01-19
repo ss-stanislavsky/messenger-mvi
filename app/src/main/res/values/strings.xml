@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Messenger MVI</string>
+    <string name="menu">Menu</string>
+    <string name="share">Share</string>
+    <string name="main">Main</string>
+    <string name="exit">Exit</string>
+    <string name="search">Search</string>
+    <string name="enter_message">Enter message</string>
+</resources>
