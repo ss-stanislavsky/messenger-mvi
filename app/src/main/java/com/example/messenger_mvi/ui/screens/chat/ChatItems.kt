@@ -22,10 +22,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.messenger_mvi.ui.models.MessageUI
 import com.example.messenger_mvi.ui.theme.ColorPrimaryDark
 
 @Composable
-fun AlienChatItem() {
+fun AlienChatItem(message: MessageUI? = null) {
     Row {
         Box(
             modifier = Modifier
@@ -37,7 +38,7 @@ fun AlienChatItem() {
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "SF",
+                text = message?.authorNameAlias ?: "",
                 fontSize = 20.sp,
                 color = ColorPrimaryDark,
                 textAlign = TextAlign.Center
@@ -56,7 +57,7 @@ fun AlienChatItem() {
                     .padding(12.dp)
             ) {
                 Text(
-                    text = "Card View Card View Card View Card View Card View Card View Card View Card View Card ",
+                    text = message?.message ?: "",
                     fontSize = 16.sp,
                     color = ColorPrimaryDark
                 )
@@ -66,7 +67,7 @@ fun AlienChatItem() {
 }
 
 @Composable
-fun MyChatItem() {
+fun MyChatItem(message: MessageUI? = null) {
     Row(
         horizontalArrangement = Arrangement.End,
         modifier = Modifier.fillMaxWidth(),
@@ -84,7 +85,7 @@ fun MyChatItem() {
                         .padding(12.dp)
                 ) {
                     Text(
-                        text = "Card View Card View Card View Card View Card View Card View Card View Card View Card ",
+                        text = message?.message ?: "",
                         fontSize = 16.sp,
                         color = Color.White,
                         textAlign = TextAlign.Start,
@@ -102,7 +103,7 @@ fun MyChatItem() {
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "SF",
+                text = message?.authorNameAlias ?: "",
                 fontSize = 20.sp,
                 color = Color.White,
                 textAlign = TextAlign.Center

@@ -6,4 +6,5 @@
     <string name="exit">Exit</string>
     <string name="search">Search</string>
     <string name="enter_message">Enter message</string>
+    <string name="start_chating">Please, write your first message</string>
 </resources>
