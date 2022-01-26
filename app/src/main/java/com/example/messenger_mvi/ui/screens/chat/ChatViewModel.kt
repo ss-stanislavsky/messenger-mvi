@@ -15,6 +15,11 @@ class ChatViewModel @Inject constructor(
     private val messageUseCase: MessageUseCase = messageUseCaseFactory.create(viewModelScope)
 
     val state = messageUseCase.state
+    val action = messageUseCase.action
+
+    init {
+        sendEvent(ChatEvent.Launch)
+    }
 
     private fun sendEvent(event: ChatEvent) {
         messageUseCase.sendEvent(event)

@@ -8,7 +8,7 @@ import kotlinx.coroutines.delay
 class MessageDataSourceImpl : MessageDataSource {
 
     override suspend fun sendMessage(value: String): Result<MessageData> {
-        delay(3000)
+        delay((random(15) * 100).toLong())
         return if (random(10) % 10 != 0) {
             val author = Users.getById(random(5).toLong())
             val data = MessageData(
@@ -24,7 +24,7 @@ class MessageDataSourceImpl : MessageDataSource {
     }
 
     override suspend fun loadMessages(): Result<List<MessageData>> {
-        delay(2000)
+        delay(3000)
         return Result.success(emptyList())
     }
 }

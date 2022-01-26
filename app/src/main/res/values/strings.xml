@@ -7,4 +7,5 @@
     <string name="search">Search</string>
     <string name="enter_message">Enter message</string>
     <string name="start_chating">Please, write your first message</string>
+    <string name="enter_some_message">Please, enter some message</string>
 </resources>
