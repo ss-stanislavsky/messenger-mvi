@@ -90,11 +90,11 @@ class MessageUseCase @AssistedInject constructor(
                     setState(oldState.copy(isSending = true))
                     messageRepository.sendMessage(event.message)
                         .onSuccess {
-                            val messages = messageRepository.messages.asReversed()
-                            setState(oldState.copy(data = messages, message = "", isSending = false))
-                            setAction(ChatAction.Scroll(position = messages.size))
+                            val data = messageRepository.messages.asReversed()
+                            setState(oldState.copy(data = data, message = "", isSending = false))
+                            setAction(ChatAction.Scroll(position = data.size))
                         }.onFailure {
-                            setState(oldState.copy(message = "", isSending = false))
+                            setState(oldState.copy(isSending = false))
                             setAction(ChatAction.Error(errorMessage = it.localizedMessage ?: "", errorLabel))
                         }
                 }
