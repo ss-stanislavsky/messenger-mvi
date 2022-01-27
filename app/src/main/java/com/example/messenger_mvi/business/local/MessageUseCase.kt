@@ -6,6 +6,7 @@ import com.example.messenger_mvi.business.model.chat.ChatEvent
 import com.example.messenger_mvi.business.model.chat.ChatState
 import com.example.messenger_mvi.business.repository.MessageRepository
 import com.example.messenger_mvi.framework.managers.ResourceManager
+import com.example.messenger_mvi.ui.models.MessageUI
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -14,7 +15,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 class MessageUseCase @AssistedInject constructor(
@@ -36,17 +36,10 @@ class MessageUseCase @AssistedInject constructor(
     val action: Flow<ChatAction>
         get() = _action
 
-    private val dbMessagesFlow = messageRepository.messagesFlow
+    private val messages: List<MessageUI>
+        get() = messageRepository.messages.asReversed()
 
     private val errorLabel = resourceManager.getStringFromResource(android.R.string.ok)
-
-    init {
-        scope.launch(Dispatchers.IO) {
-            dbMessagesFlow.collect {
-
-            }
-        }
-    }
 
     fun sendEvent(value: ChatEvent) {
         reduce(_state.value, value)
@@ -71,7 +64,7 @@ class MessageUseCase @AssistedInject constructor(
                     setState(oldState.copy(isLoading = true))
                     messageRepository.loadMessages()
                         .onSuccess {
-                            setState(oldState.copy(data = messageRepository.messages.asReversed(), isLoading = false))
+                            setState(oldState.copy(data = messages, isLoading = false))
                         }.onFailure {
                             setState(oldState.copy(isLoading = false))
                             setAction(ChatAction.Error(errorMessage = it.localizedMessage ?: "", errorLabel))
@@ -87,16 +80,34 @@ class MessageUseCase @AssistedInject constructor(
                         )
                         return@launch
                     }
-                    setState(oldState.copy(isSending = true))
+                    setState(oldState.copy(message = event.message, isSending = true))
                     messageRepository.sendMessage(event.message)
                         .onSuccess {
-                            val data = messageRepository.messages.asReversed()
+                            val data = messages
                             setState(oldState.copy(data = data, message = "", isSending = false))
-                            setAction(ChatAction.Scroll(position = data.size))
                         }.onFailure {
                             setState(oldState.copy(isSending = false))
                             setAction(ChatAction.Error(errorMessage = it.localizedMessage ?: "", errorLabel))
                         }
+                }
+                is ChatEvent.Select -> {
+                    val data = oldState.data.map {
+                        if (it.id == event.messageId) {
+                            it.copy(isSelected = !it.isSelected)
+                        } else {
+                            it
+                        }
+                    }
+                    setState(oldState.copy(data = data, isEditMode = data.any { it.isSelected }))
+                }
+                is ChatEvent.Delete -> {
+                    setState(oldState.copy(data = oldState.data.filter { !it.isSelected }, isEditMode = false))
+                }
+                is ChatEvent.ShowAuthorInfo -> {
+                    setState(oldState.copy(showAuthorInfoData = oldState.data.find { it.id == event.messageId }))
+                }
+                is ChatEvent.HideAuthorInfo -> {
+                    setState(oldState.copy(showAuthorInfoData = null))
                 }
             }
         }

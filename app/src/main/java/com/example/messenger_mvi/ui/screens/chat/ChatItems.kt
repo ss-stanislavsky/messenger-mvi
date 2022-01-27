@@ -1,7 +1,9 @@
 package com.example.messenger_mvi.ui.screens.chat
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -22,12 +24,31 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.messenger_mvi.ui.models.MessageUI
 import com.example.messenger_mvi.ui.theme.ColorPrimaryDark
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun AlienChatItem(message: MessageUI? = null) {
-    Row {
+fun AlienChatItem(message: MessageUI? = null, isEditMode: Boolean = false, viewModel: ChatViewModel = viewModel()) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                if (message?.isSelected == true) ColorPrimaryDark
+                else Color.Transparent
+            )
+            .combinedClickable(
+                onLongClick = { viewModel.selectItem(message?.id!!) },
+                onClick = {
+                    if (isEditMode) {
+                        viewModel.selectItem(message?.id!!)
+                    } else {
+                        viewModel.showAuthorInfo(message?.id!!)
+                    }
+                }
+            )
+    ) {
         Box(
             modifier = Modifier
                 .padding(start = 8.dp, top = 8.dp)
@@ -66,11 +87,27 @@ fun AlienChatItem(message: MessageUI? = null) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun MyChatItem(message: MessageUI? = null) {
+fun MyChatItem(message: MessageUI? = null, isEditMode: Boolean = false, viewModel: ChatViewModel = viewModel()) {
     Row(
         horizontalArrangement = Arrangement.End,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                if (message?.isSelected == true) ColorPrimaryDark
+                else Color.Transparent
+            )
+            .combinedClickable(
+                onLongClick = { viewModel.selectItem(message?.id!!) },
+                onClick = {
+                    if (isEditMode) {
+                        viewModel.selectItem(message?.id!!)
+                    } else {
+                        viewModel.showAuthorInfo(message?.id!!)
+                    }
+                }
+            ),
     ) {
         Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
             Card(

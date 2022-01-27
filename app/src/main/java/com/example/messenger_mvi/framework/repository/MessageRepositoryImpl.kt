@@ -54,7 +54,7 @@ class MessageRepositoryImpl(
     private inline fun runDbTransaction(crossinline action: MessengerDatabase.() -> Unit) {
         with(database) {
             runInTransaction {
-                action(this).apply { }
+                action(this)
             }
         }
     }

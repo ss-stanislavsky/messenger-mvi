@@ -7,6 +7,8 @@ data class ChatState(
     val message: String,
     val isSending: Boolean,
     val isLoading: Boolean,
+    val isEditMode: Boolean,
+    val showAuthorInfoData: MessageUI?,
 ) {
     companion object {
         fun initial() = ChatState(
@@ -14,6 +16,8 @@ data class ChatState(
             message = "",
             isSending = false,
             isLoading = false,
+            isEditMode = false,
+            showAuthorInfoData = null,
         )
     }
 }

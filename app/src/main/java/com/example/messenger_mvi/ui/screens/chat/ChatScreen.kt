@@ -1,5 +1,8 @@
 package com.example.messenger_mvi.ui.screens.chat
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -17,6 +20,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.AlertDialog
+import androidx.compose.material.Button
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
@@ -27,6 +32,7 @@ import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Share
@@ -41,7 +47,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
@@ -55,12 +61,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.messenger_mvi.R
 import com.example.messenger_mvi.business.model.chat.ChatAction
 import com.example.messenger_mvi.ui.models.MessageUI
+import com.example.messenger_mvi.ui.theme.ColorPrimaryDark
 import com.example.messenger_mvi.ui.theme.ColorPrimaryLight
 import com.example.messenger_mvi.ui.theme.MessengerMVITheme
 import com.google.accompanist.insets.ExperimentalAnimatedInsets
 import com.google.accompanist.insets.LocalWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
-import com.google.accompanist.insets.rememberImeNestedScrollConnection
 import com.google.accompanist.insets.rememberInsetsPaddingValues
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collectLatest
@@ -83,25 +89,24 @@ fun ChatScreen(
 
     Scaffold(
         scaffoldState = scaffoldState,
-        topBar = { AppBar(scope, scaffoldState) },
+        topBar = { AppBar(scope, scaffoldState, state.value.isEditMode) },
         bottomBar = {
-            Surface(elevation = 1.dp, color = ColorPrimaryLight) {
-                Footer(
-                    isSending = state.value.isSending,
-                    messageState = messageState.apply { value = state.value.message })
-            }
+            Footer(
+                isSending = state.value.isSending,
+                messageState = messageState.apply { value = state.value.message })
         },
-        modifier = Modifier
-            .fillMaxSize()
+        modifier = Modifier.fillMaxSize()
     ) { contentPadding ->
 
         with(state.value) {
-            MessageList(
+            MainContent(
                 data = data,
                 isLoading = isLoading,
+                isEditMode = isEditMode,
                 listState = listState,
                 contentPadding = contentPadding
             )
+            showAuthorInfoData?.let { UserInfo(it) }
         }
 
         LaunchedEffect(key1 = Unit) {
@@ -109,7 +114,6 @@ fun ChatScreen(
                 when (it) {
                     ChatAction.Empty -> {}
                     is ChatAction.Error -> showError(scaffoldState, scope, it.errorMessage, it.errorLabel)
-//                    is ChatAction.Scroll -> scrollList(listState, scope, it.position)
                 }
             }
         }
@@ -117,7 +121,12 @@ fun ChatScreen(
 }
 
 @Composable
-fun AppBar(scope: CoroutineScope, scaffoldState: ScaffoldState) {
+fun AppBar(
+    scope: CoroutineScope,
+    scaffoldState: ScaffoldState,
+    isSelected: Boolean,
+    viewModel: ChatViewModel = viewModel()
+) {
     TopAppBar(
         contentPadding = rememberInsetsPaddingValues(
             LocalWindowInsets.current.statusBars,
@@ -137,13 +146,33 @@ fun AppBar(scope: CoroutineScope, scaffoldState: ScaffoldState) {
             Icon(imageVector = Icons.Filled.Share, contentDescription = stringResource(id = R.string.share))
         }
     }
+    AnimatedVisibility(
+        visible = isSelected,
+        enter = fadeIn(),
+        exit = fadeOut(),
+    ) {
+        TopAppBar(
+            contentPadding = rememberInsetsPaddingValues(
+                LocalWindowInsets.current.statusBars,
+                applyBottom = false,
+            ),
+            backgroundColor = ColorPrimaryDark,
+        ) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                IconButton(onClick = { viewModel.deleteMessages() }) {
+                    Icon(imageVector = Icons.Filled.Delete, contentDescription = stringResource(id = R.string.delete))
+                }
+            }
+        }
+    }
 }
 
 @OptIn(ExperimentalAnimatedInsets::class)
 @Composable
-fun MessageList(
+fun MainContent(
     data: List<MessageUI> = emptyList(),
     isLoading: Boolean = false,
+    isEditMode: Boolean,
     listState: LazyListState,
     contentPadding: PaddingValues,
 ) {
@@ -157,32 +186,56 @@ fun MessageList(
                 .fillMaxSize()
                 .weight(1f)
         ) {
-            if (!isLoading) {
-                if (data.isNotEmpty()) {
-                    LazyColumn(
-                        contentPadding = contentPadding,
-                        reverseLayout = true,
-                        modifier = Modifier
-                            .nestedScroll(connection = rememberImeNestedScrollConnection()),
-                        state = listState,
-                        content = {
-                            data.forEach {
-                                if (it.isMyOwn) {
-                                    item { MyChatItem(it) }
-                                } else {
-                                    item { AlienChatItem(it) }
-                                }
-                            }
-                        })
-                } else {
-                    NoContent()
-                }
-            } else {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            when {
+                isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                data.isNotEmpty() -> MessageList(data, listState, contentPadding, isEditMode)
+                else -> NoContent()
             }
         }
-//        Footer(isSending, messageState)
     }
+}
+
+@Composable
+fun MessageList(
+    data: List<MessageUI> = emptyList(),
+    listState: LazyListState,
+    contentPadding: PaddingValues,
+    isEditMode: Boolean,
+) {
+    LazyColumn(
+        contentPadding = contentPadding,
+        reverseLayout = true,
+        // modifier = Modifier.nestedScroll(connection = rememberImeNestedScrollConnection()),
+        state = listState,
+        content = {
+            data.forEach {
+                if (it.isMyOwn) {
+                    item { MyChatItem(it, isEditMode) }
+                } else {
+                    item { AlienChatItem(it, isEditMode) }
+                }
+            }
+        }
+    )
+}
+
+@Composable
+fun UserInfo(message: MessageUI, viewModel: ChatViewModel = viewModel()) {
+    AlertDialog(
+        onDismissRequest = {},
+        title = { Text(text = message.authorNameAlias) },
+        text = { Text(text = message.authorName) },
+        confirmButton = {},
+        dismissButton = {
+            Button(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = { viewModel.hideAuthorInfo() }
+            ) {
+                Text(text = stringResource(id = android.R.string.ok))
+            }
+        },
+        backgroundColor = Color.White
+    )
 }
 
 @Composable
@@ -203,35 +256,37 @@ fun NoContent() {
 
 @Composable
 fun Footer(isSending: Boolean, messageState: MutableState<String>, viewModel: ChatViewModel = viewModel()) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp)
-            .navigationBarsWithImePadding(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        OutlinedTextField(
-            value = messageState.value,
-            onValueChange = { messageState.value = it },
-            textStyle = TextStyle(fontSize = 16.sp),
-            modifier = Modifier.weight(1f),
-            placeholder = { Text(text = stringResource(id = R.string.enter_message)) },
-            // TODO: decide how to increase maxLines
-            maxLines = 1,
-            shape = RoundedCornerShape(16.dp),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Text,
-                imeAction = ImeAction.Send,
-                capitalization = KeyboardCapitalization.Sentences
-            ),
-            keyboardActions = KeyboardActions { viewModel.sendMessage(messageState.value) },
-        )
-        Box {
-            if (isSending) {
-                CircularProgressIndicator(modifier = Modifier.padding(start = 8.dp, top = 4.dp))
-            } else {
-                IconButton(onClick = { viewModel.sendMessage(messageState.value) }) {
-                    Icon(Icons.Filled.Send, contentDescription = "", modifier = Modifier.padding(start = 8.dp))
+    Surface(elevation = 1.dp, color = ColorPrimaryLight) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp)
+                .navigationBarsWithImePadding(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedTextField(
+                value = messageState.value,
+                onValueChange = { messageState.value = it },
+                textStyle = TextStyle(fontSize = 16.sp),
+                modifier = Modifier.weight(1f),
+                placeholder = { Text(text = stringResource(id = R.string.enter_message)) },
+                // TODO: decide how to increase maxLines
+                maxLines = 1,
+                shape = RoundedCornerShape(16.dp),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Send,
+                    capitalization = KeyboardCapitalization.Sentences
+                ),
+                keyboardActions = KeyboardActions { viewModel.sendMessage(messageState.value) },
+            )
+            Box {
+                if (isSending) {
+                    CircularProgressIndicator(modifier = Modifier.padding(start = 8.dp, top = 4.dp))
+                } else {
+                    IconButton(onClick = { viewModel.sendMessage(messageState.value) }) {
+                        Icon(Icons.Filled.Send, contentDescription = "", modifier = Modifier.padding(start = 8.dp))
+                    }
                 }
             }
         }
@@ -240,10 +295,6 @@ fun Footer(isSending: Boolean, messageState: MutableState<String>, viewModel: Ch
 
 fun showError(scaffoldState: ScaffoldState, scope: CoroutineScope, errorMessage: String, label: String) {
     scope.launch { scaffoldState.snackbarHostState.showSnackbar(errorMessage, label) }
-}
-
-fun scrollList(listState: LazyListState, scope: CoroutineScope, position: Int) {
-    scope.launch { listState.animateScrollToItem(position) }
 }
 
 @Preview(showSystemUi = true, showBackground = true)

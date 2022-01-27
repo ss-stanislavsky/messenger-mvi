@@ -28,4 +28,20 @@ class ChatViewModel @Inject constructor(
     fun sendMessage(value: String) {
         sendEvent(ChatEvent.Send(value))
     }
+
+    fun deleteMessages() {
+        sendEvent(ChatEvent.Delete)
+    }
+
+    fun showAuthorInfo(messageId: Long) {
+        sendEvent(ChatEvent.ShowAuthorInfo(messageId))
+    }
+
+    fun hideAuthorInfo() {
+        sendEvent(ChatEvent.HideAuthorInfo)
+    }
+
+    fun selectItem(messageId: Long) {
+        sendEvent(ChatEvent.Select(messageId))
+    }
 }

@@ -7,4 +7,5 @@ data class MessageUI(
     val authorNameAlias: String,
     val message: String,
     val isMyOwn: Boolean,
+    var isSelected: Boolean = false,
 )

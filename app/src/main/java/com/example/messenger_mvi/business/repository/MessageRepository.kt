@@ -1,7 +1,6 @@
 package com.example.messenger_mvi.business.repository
 
 import com.example.messenger_mvi.business.model.message.MessageData
-import com.example.messenger_mvi.database.entity.MessageEntity
 import com.example.messenger_mvi.ui.models.MessageUI
 import kotlinx.coroutines.flow.Flow
 
