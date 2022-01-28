@@ -35,6 +35,12 @@ class MessageRepositoryImpl(
     override suspend fun loadMessages(): Result<Unit> =
         messageDataSource.loadMessages().onSuccess { it.save() }.mapResult()
 
+    override suspend fun deleteMessage(id: Long) {
+        runDbTransaction {
+            messageDao.deleteMessage(id)
+        }
+    }
+
     private fun <R> Result<R>.mapResult(): Result<Unit> =
         if (isSuccess) Result.success(Unit)
         else Result.failure(exceptionOrNull()!!)

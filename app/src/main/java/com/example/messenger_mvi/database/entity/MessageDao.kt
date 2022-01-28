@@ -30,4 +30,7 @@ interface MessageDao {
 
     @Query("SELECT * FROM ${MessageEntity.TABLE_NAME} WHERE ${MessageEntity.MESSAGE_ID} = :id")
     fun getMessageByIdFlow(id: Long): Flow<MessageEntity>
+
+    @Query("DELETE FROM ${MessageEntity.TABLE_NAME} WHERE ${MessageEntity.MESSAGE_ID} = :id")
+    fun deleteMessage(id: Long)
 }

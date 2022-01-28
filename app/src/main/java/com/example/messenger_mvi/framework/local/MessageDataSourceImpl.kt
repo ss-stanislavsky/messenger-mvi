@@ -9,7 +9,7 @@ class MessageDataSourceImpl : MessageDataSource {
 
     override suspend fun sendMessage(value: String): Result<MessageData> {
         delay((random(15) * 100).toLong())
-        return if (random(10) % 10 != 0) {
+        return if (random(5) % 10 != 0) {
             val author = Users.getById(random(5).toLong())
             val data = MessageData(
                 id = null,

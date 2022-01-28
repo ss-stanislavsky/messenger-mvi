@@ -10,4 +10,5 @@ interface MessageRepository {
     suspend fun saveMessageToDB(value: MessageData)
     suspend fun sendMessage(value: String): Result<Unit>
     suspend fun loadMessages(): Result<Unit>
+    suspend fun deleteMessage(id: Long)
 }

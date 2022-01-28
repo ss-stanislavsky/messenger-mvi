@@ -32,6 +32,9 @@ class MessageUseCase @AssistedInject constructor(
     val state: StateFlow<ChatState>
         get() = _state
 
+    private val oldState: ChatState
+        get() = _state.value
+
     private val _action = MutableStateFlow<ChatAction>(ChatAction.Empty)
     val action: Flow<ChatAction>
         get() = _action
@@ -42,7 +45,7 @@ class MessageUseCase @AssistedInject constructor(
     private val errorLabel = resourceManager.getStringFromResource(android.R.string.ok)
 
     fun sendEvent(value: ChatEvent) {
-        reduce(_state.value, value)
+        reduce(value)
     }
 
     private fun setState(value: ChatState) {
@@ -57,7 +60,7 @@ class MessageUseCase @AssistedInject constructor(
         }
     }
 
-    private fun reduce(oldState: ChatState, event: ChatEvent) {
+    private fun reduce(event: ChatEvent) {
         scope.launch(Dispatchers.IO) {
             when (event) {
                 ChatEvent.Launch -> {
@@ -101,7 +104,11 @@ class MessageUseCase @AssistedInject constructor(
                     setState(oldState.copy(data = data, isEditMode = data.any { it.isSelected }))
                 }
                 is ChatEvent.Delete -> {
-                    setState(oldState.copy(data = oldState.data.filter { !it.isSelected }, isEditMode = false))
+                    oldState.data
+                        .filter { it.isSelected }
+                        .map { it.id }
+                        .forEach { messageRepository.deleteMessage(it) }
+                    setState(oldState.copy(data = messages, isEditMode = false))
                 }
                 is ChatEvent.ShowAuthorInfo -> {
                     setState(oldState.copy(showAuthorInfoData = oldState.data.find { it.id == event.messageId }))
