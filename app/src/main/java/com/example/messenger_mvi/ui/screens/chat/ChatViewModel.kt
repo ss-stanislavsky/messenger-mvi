@@ -12,11 +12,9 @@ import kotlin.coroutines.CoroutineContext
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
-    messageUseCaseFactory: MessageUseCase.MessageUseCaseFactory,
+    private val messageUseCase: MessageUseCase,
     @IODispatcher private val coroutineContext: CoroutineContext,
 ) : BaseViewModel() {
-
-    private val messageUseCase: MessageUseCase = messageUseCaseFactory.create(viewModelScope)
 
     val state = messageUseCase.state
     val action = messageUseCase.action

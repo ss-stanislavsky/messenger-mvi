@@ -7,24 +7,15 @@ import com.example.messenger_mvi.business.model.chat.ChatState
 import com.example.messenger_mvi.business.repository.MessageRepository
 import com.example.messenger_mvi.framework.managers.ResourceManager
 import com.example.messenger_mvi.ui.models.MessageUI
-import dagger.assisted.Assisted
-import dagger.assisted.AssistedFactory
-import dagger.assisted.AssistedInject
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import javax.inject.Inject
 
-class MessageUseCase @AssistedInject constructor(
+class MessageUseCase @Inject constructor(
     private val messageRepository: MessageRepository,
     private val resourceManager: ResourceManager,
-    @Assisted private val scope: CoroutineScope,
 ) {
-
-    @AssistedFactory
-    interface MessageUseCaseFactory {
-        fun create(scope: CoroutineScope): MessageUseCase
-    }
 
     private val _state = MutableStateFlow(ChatState.initial())
     val state: StateFlow<ChatState>
