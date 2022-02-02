@@ -11,11 +11,9 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 
 class MessageUseCase @AssistedInject constructor(
     private val messageRepository: MessageRepository,
@@ -44,78 +42,72 @@ class MessageUseCase @AssistedInject constructor(
 
     private val errorLabel = resourceManager.getStringFromResource(android.R.string.ok)
 
-    fun sendEvent(value: ChatEvent) {
+    suspend fun sendEvent(value: ChatEvent) {
         reduce(value)
     }
 
-    private fun setState(value: ChatState) {
-        scope.launch(Dispatchers.IO) {
-            _state.emit(value)
-        }
+    private suspend fun setState(value: ChatState) {
+        _state.emit(value)
     }
 
-    private fun setAction(value: ChatAction) {
-        scope.launch(Dispatchers.IO) {
-            _action.emit(value)
-        }
+    private suspend fun setAction(value: ChatAction) {
+        _action.emit(value)
     }
 
-    private fun reduce(event: ChatEvent) {
-        scope.launch(Dispatchers.IO) {
-            when (event) {
-                ChatEvent.Launch -> {
-                    setState(oldState.copy(isLoading = true))
-                    messageRepository.loadMessages()
-                        .onSuccess {
-                            setState(oldState.copy(data = messages, isLoading = false))
-                        }.onFailure {
-                            setState(oldState.copy(isLoading = false))
-                            setAction(ChatAction.Error(errorMessage = it.localizedMessage ?: "", errorLabel))
-                        }
-                }
-                is ChatEvent.Send -> {
-                    if (event.message.isBlank()) {
-                        setAction(
-                            ChatAction.Error(
-                                errorMessage = resourceManager.getStringFromResource(R.string.enter_some_message),
-                                errorLabel
-                            )
+    private suspend fun reduce(event: ChatEvent) {
+        when (event) {
+            ChatEvent.Launch -> {
+                setState(oldState.copy(isLoading = true))
+                messageRepository.loadMessages()
+                    .onSuccess {
+                        setState(oldState.copy(data = messages, isLoading = false))
+                    }.onFailure {
+                        setState(oldState.copy(isLoading = false))
+                        setAction(ChatAction.Error(errorMessage = it.localizedMessage ?: "", errorLabel))
+                    }
+            }
+            is ChatEvent.Send -> {
+                if (event.message.isBlank()) {
+                    setAction(
+                        ChatAction.Error(
+                            errorMessage = resourceManager.getStringFromResource(R.string.enter_some_message),
+                            errorLabel
                         )
-                        return@launch
+                    )
+                    return
+                }
+                setState(oldState.copy(message = event.message, isSending = true))
+                messageRepository.sendMessage(event.message)
+                    .onSuccess {
+                        val data = messages
+                        setState(oldState.copy(data = data, message = "", isSending = false))
+                    }.onFailure {
+                        setState(oldState.copy(isSending = false))
+                        setAction(ChatAction.Error(errorMessage = it.localizedMessage ?: "", errorLabel))
                     }
-                    setState(oldState.copy(message = event.message, isSending = true))
-                    messageRepository.sendMessage(event.message)
-                        .onSuccess {
-                            val data = messages
-                            setState(oldState.copy(data = data, message = "", isSending = false))
-                        }.onFailure {
-                            setState(oldState.copy(isSending = false))
-                            setAction(ChatAction.Error(errorMessage = it.localizedMessage ?: "", errorLabel))
-                        }
-                }
-                is ChatEvent.Select -> {
-                    val data = oldState.data.map {
-                        if (it.id == event.messageId) {
-                            it.copy(isSelected = !it.isSelected)
-                        } else {
-                            it
-                        }
+            }
+            is ChatEvent.Select -> {
+                val data = oldState.data.map {
+                    if (it.id == event.messageId) {
+                        it.copy(isSelected = !it.isSelected)
+                    } else {
+                        it
                     }
-                    setState(oldState.copy(data = data, isEditMode = data.any { it.isSelected }))
                 }
-                is ChatEvent.Delete -> {
-                    oldState.data
-                        .filter { it.isSelected }
-                        .map { it.id }
-                        .forEach { messageRepository.deleteMessage(it) }
-                    setState(oldState.copy(data = messages, isEditMode = false))
-                }
-                is ChatEvent.ShowAuthorInfo -> {
-                    setState(oldState.copy(showAuthorInfoData = oldState.data.find { it.id == event.messageId }))
-                }
-                is ChatEvent.HideAuthorInfo -> {
-                    setState(oldState.copy(showAuthorInfoData = null))
-                }
+                setState(oldState.copy(data = data, isEditMode = data.any { it.isSelected }))
+            }
+            is ChatEvent.Delete -> {
+                oldState.data
+                    .filter { it.isSelected }
+                    .map { it.id }
+                    .forEach { messageRepository.deleteMessage(it) }
+                setState(oldState.copy(data = messages, isEditMode = false))
+            }
+            is ChatEvent.ShowAuthorInfo -> {
+                setState(oldState.copy(showAuthorInfoData = oldState.data.find { it.id == event.messageId }))
+            }
+            is ChatEvent.HideAuthorInfo -> {
+                setState(oldState.copy(showAuthorInfoData = null))
             }
         }
     }
