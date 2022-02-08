@@ -7,9 +7,11 @@ import com.example.messenger_mvi.business.model.chat.ChatState
 import com.example.messenger_mvi.business.repository.MessageRepository
 import com.example.messenger_mvi.framework.managers.ResourceManager
 import com.example.messenger_mvi.ui.models.MessageUI
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import javax.inject.Inject
 
 class MessageUseCase @Inject constructor(
@@ -24,9 +26,9 @@ class MessageUseCase @Inject constructor(
     private val oldState: ChatState
         get() = _state.value
 
-    private val _action = MutableStateFlow<ChatAction>(ChatAction.Empty)
+    private val _action = Channel<ChatAction>(Channel.BUFFERED)
     val action: Flow<ChatAction>
-        get() = _action
+        get() = _action.receiveAsFlow()
 
     private val messages: List<MessageUI>
         get() = messageRepository.messages.asReversed()
@@ -42,7 +44,7 @@ class MessageUseCase @Inject constructor(
     }
 
     private suspend fun setAction(value: ChatAction) {
-        _action.emit(value)
+        _action.send(value)
     }
 
     private suspend fun reduce(event: ChatEvent) {

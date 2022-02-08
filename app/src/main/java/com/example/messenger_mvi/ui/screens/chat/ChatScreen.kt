@@ -270,8 +270,7 @@ fun Footer(isSending: Boolean, messageState: MutableState<String>, viewModel: Ch
                 textStyle = TextStyle(fontSize = 16.sp),
                 modifier = Modifier.weight(1f),
                 placeholder = { Text(text = stringResource(id = R.string.enter_message)) },
-                // TODO: decide how to increase maxLines
-                maxLines = 1,
+                maxLines = 5,
                 shape = RoundedCornerShape(16.dp),
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Text,
